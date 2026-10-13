@@ -1,0 +1,129 @@
+# After a merge to main: builds and boot-tests every distro the push added or
+# changed, then uploads each ISO with its SHA-256 and package list to R2 as
+# library/<slug>/<run id>/<slug>.iso (served at downloads.linuxlive.com). A
+# distro whose folder was deleted has its ISOs deleted. linuxlive.com shows a
+# distro once its latest publish run here has succeeded.
+name: publish
+
+on:
+  push:
+    branches: [main]
+    paths: ["distros/**"]
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: Rebuild and publish this distro (its folder name)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One publish at a time, none cancelled: each must finish its uploads.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUCKET: ${{ vars.R2_BUCKET || 'linuxlive-downloads' }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: auto
+  R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+  # Newer AWS CLIs add checksum headers R2 can reject; send them only when an API requires them.
+  AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+  AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+
+jobs:
+  listing:
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      remove: ${{ steps.check.outputs.remove }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+          SLUG: ${{ inputs.slug }}
+        run: |
+          if [ -n "$SLUG" ]; then
+            python scripts/check_listing.py --slug "$SLUG"
+          elif [ -z "${BEFORE//0/}" ]; then
+            # The branch's first push: everything in it is new.
+            python scripts/check_listing.py "$(git hash-object -t tree /dev/null)" HEAD --many
+          else
+            python scripts/check_listing.py "$BEFORE" HEAD --many
+          fi
+
+  build:
+    name: build (${{ matrix.slug }})
+    needs: listing
+    if: needs.listing.outputs.build != '[]'
+    strategy:
+      matrix:
+        slug: ${{ fromJSON(needs.listing.outputs.build) }}
+    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.1.3
+    with:
+      spec: distros/${{ matrix.slug }}/linuxlive.yaml
+      name: ${{ matrix.slug }}
+      keep-iso: true
+      iso-retention-days: 1
+
+  publish:
+    name: publish (${{ matrix.slug }})
+    needs: [listing, build]
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        slug: ${{ fromJSON(needs.listing.outputs.build) }}
+    env:
+      SLUG: ${{ matrix.slug }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: iso-${{ matrix.slug }}
+          path: iso
+      - name: Check the ISO against its SHA-256
+        working-directory: iso
+        run: sha256sum -c "$SLUG.iso.sha256" && test -s "$SLUG.iso.packages"
+      - name: Upload to R2
+        working-directory: iso
+        run: |
+          key="library/$SLUG/$GITHUB_RUN_ID"
+          # The run id makes every path new, so browsers and Cloudflare may cache it forever.
+          cache="public, max-age=31536000, immutable"
+          aws s3 cp "$SLUG.iso" "s3://$BUCKET/$key/$SLUG.iso" --endpoint-url "$R2_ENDPOINT" \
+            --content-type application/x-iso9660-image --cache-control "$cache" --no-progress
+          aws s3 cp "$SLUG.iso.sha256" "s3://$BUCKET/$key/$SLUG.iso.sha256" --endpoint-url "$R2_ENDPOINT" \
+            --content-type text/plain --cache-control "$cache" --no-progress
+          aws s3 cp "$SLUG.iso.packages" "s3://$BUCKET/$key/$SLUG.iso.packages" --endpoint-url "$R2_ENDPOINT" \
+            --content-type "text/plain; charset=utf-8" --cache-control "$cache" --no-progress
+          echo "https://downloads.linuxlive.com/$key/$SLUG.iso" >> "$GITHUB_STEP_SUMMARY"
+
+  remove:
+    name: remove (${{ matrix.slug }})
+    needs: listing
+    if: needs.listing.outputs.remove != '[]'
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        slug: ${{ fromJSON(needs.listing.outputs.remove) }}
+    env:
+      SLUG: ${{ matrix.slug }}
+    steps:
+      - name: Delete its ISOs from R2
+        run: |
+          aws s3 rm "s3://$BUCKET/library/$SLUG/" --recursive --endpoint-url "$R2_ENDPOINT"
+          echo "Deleted library/$SLUG/ from R2." >> "$GITHUB_STEP_SUMMARY"
