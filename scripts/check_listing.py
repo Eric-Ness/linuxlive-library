@@ -2,11 +2,13 @@
 
     python scripts/check_listing.py BASE HEAD [--pr-author LOGIN] [--many]
     python scripts/check_listing.py --slug SLUG
+    python scripts/check_listing.py --all
 
 BASE and HEAD are commits. Without --many (pull requests) the change must stay
 inside one distros/<slug>/ folder, compared with where it branched from BASE;
 with --many (a push to main) everything between BASE and HEAD counts. --slug
-checks one existing folder (a rebuild by hand). Each touched folder that still exists must
+checks one existing folder (a rebuild by hand); --all checks every folder (the
+monthly rebuild). Each touched folder that still exists must
 hold linuxlive.yaml, listing.yaml and its art (PNG or JPEG in assets/), at most
 10 MB in all, with a valid listing; with --pr-author, the listing's author must
 be the pull request's author.
@@ -123,13 +125,16 @@ def main() -> int:
     parser.add_argument("base", nargs="?")
     parser.add_argument("head", nargs="?")
     parser.add_argument("--slug")
+    parser.add_argument("--all", action="store_true", help="every distro folder (the monthly rebuild)")
     parser.add_argument("--pr-author")
     parser.add_argument("--many", action="store_true", help="allow several folders (a push to main)")
     args = parser.parse_args()
 
     problems = []
     slugs = set()
-    if args.slug:
+    if args.all:
+        paths = [f"distros/{d.name}/listing.yaml" for d in sorted((ROOT / "distros").iterdir()) if d.is_dir()]
+    elif args.slug:
         paths = [f"distros/{args.slug}/listing.yaml"]
         if not (ROOT / "distros" / args.slug).is_dir():
             problems.append(f"distros/{args.slug}: no such folder")
@@ -144,7 +149,7 @@ def main() -> int:
             slugs.add(parts[1])
         elif not args.many:
             problems.append(f"{path}: a pull request may only change files in one distros/<slug>/ folder")
-    if not args.many and len(slugs) > 1:
+    if not (args.many or args.all) and len(slugs) > 1:
         problems.append(f"one distro per pull request; this one changes {', '.join(sorted(slugs))}")
     build = sorted(s for s in slugs if (ROOT / "distros" / s).is_dir())
     # Removal deletes library/<slug>/ in R2, so only ever a well-formed slug.

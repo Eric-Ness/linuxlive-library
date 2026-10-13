@@ -1,23 +1,30 @@
 # After a merge to main: builds and boot-tests every distro the push added or
 # changed, then uploads each ISO with its SHA-256 and package list to R2 as
 # library/<slug>/<run id>/<slug>.iso (served at downloads.linuxlive.com). A
-# distro whose folder was deleted has its ISOs deleted. linuxlive.com shows a
-# distro once its latest publish run here has succeeded.
+# distro whose folder was deleted has its ISOs deleted. Monthly (the 3rd, 05:47
+# UTC) it rebuilds every distro, so their packages never fall more than a month
+# behind. Each distro is published only if its own build passed; one that fails
+# keeps its last good ISO and holds back no other. linuxlive.com shows each
+# distro's newest run whose publish job for it succeeded.
 name: publish
 
 on:
   push:
     branches: [main]
     paths: ["distros/**"]
+  schedule:
+    - cron: "47 5 3 * *"
   workflow_dispatch:
     inputs:
       slug:
-        description: Rebuild and publish this distro (its folder name)
+        description: Rebuild and publish this distro (its folder name), or "all"
         required: true
         type: string
 
 permissions:
   contents: read
+  # Each publish job reads whether its own distro's build passed.
+  actions: read
 
 # One publish at a time, none cancelled: each must finish its uploads.
 concurrency:
@@ -58,7 +65,9 @@ jobs:
           BEFORE: ${{ github.event.before }}
           SLUG: ${{ inputs.slug }}
         run: |
-          if [ -n "$SLUG" ]; then
+          if [ "$GITHUB_EVENT_NAME" = schedule ] || [ "$SLUG" = all ]; then
+            python scripts/check_listing.py --all
+          elif [ -n "$SLUG" ]; then
             python scripts/check_listing.py --slug "$SLUG"
           elif [ -z "${BEFORE//0/}" ]; then
             # The branch's first push: everything in it is new.
@@ -72,6 +81,8 @@ jobs:
     needs: listing
     if: needs.listing.outputs.build != '[]'
     strategy:
+      # One distro's failure must not cancel the others' builds.
+      fail-fast: false
       matrix:
         slug: ${{ fromJSON(needs.listing.outputs.build) }}
     uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.1.3
@@ -84,13 +95,26 @@ jobs:
   publish:
     name: publish (${{ matrix.slug }})
     needs: [listing, build]
+    # Runs even when another distro's build failed; the first step stops this
+    # distro unless its own build passed.
+    if: always() && needs.listing.result == 'success' && needs.listing.outputs.build != '[]'
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         slug: ${{ fromJSON(needs.listing.outputs.build) }}
     env:
       SLUG: ${{ matrix.slug }}
     steps:
+      - name: Did this distro's own build pass?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          state=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100"             --jq ".jobs[] | select(.name == \"build ($SLUG) / build\") | .conclusion" | tail -n 1)
+          if [ "$state" != success ]; then
+            echo "The build of $SLUG ended ${state:-without a result}; its last published ISO stays." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
       - uses: actions/download-artifact@v7
         with:
           name: iso-${{ matrix.slug }}
