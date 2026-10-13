@@ -1,0 +1,10 @@
+name: Recess Linux
+author: Eric-Ness
+tagline: A bright live desktop for families and classrooms, with learning games and drawing.
+about: >-
+  Fedora with KDE Plasma, set up for kids and classrooms: GCompris's learning
+  games, Tux Paint for drawing, Firefox and LibreOffice. Boot it from a USB
+  stick on any PC; nothing on the computer's disk changes. Built from
+  Eric-Ness/recess-linux.
+credits: Wallpaper (sky, sun, hills and toy blocks) and logo (three toy blocks) drawn for Recess Linux, CC0.
+license: CC0-1.0
