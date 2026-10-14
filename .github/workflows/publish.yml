@@ -1,5 +1,6 @@
 # After a merge to main: builds and boot-tests every distro the push added or
-# changed, then uploads each ISO with its SHA-256 and package list to R2 as
+# changed (every distro, when the push changes this file, such as a move to a
+# new linuxlive release), then uploads each ISO with its SHA-256 and package list to R2 as
 # library/<slug>/<run id>/<slug>.iso (served at downloads.linuxlive.com). A
 # distro whose folder was deleted has its ISOs deleted. Monthly (the 3rd, 05:47
 # UTC) it rebuilds every distro, so their packages never fall more than a month
@@ -11,7 +12,8 @@ name: publish
 on:
   push:
     branches: [main]
-    paths: ["distros/**"]
+    # This file too: moving it to a new linuxlive release rebuilds every distro.
+    paths: ["distros/**", ".github/workflows/publish.yml"]
   schedule:
     - cron: "47 5 3 * *"
   workflow_dispatch:
@@ -69,6 +71,10 @@ jobs:
             python scripts/check_listing.py --all
           elif [ -n "$SLUG" ]; then
             python scripts/check_listing.py --slug "$SLUG"
+          elif [ -n "${BEFORE//0/}" ] && git diff --name-only "$BEFORE" HEAD | grep -qx '.github/workflows/publish.yml'; then
+            # How distros are built changed (a new linuxlive release): rebuild them all,
+            # so every Library page gets a build from the new release.
+            python scripts/check_listing.py --all
           elif [ -z "${BEFORE//0/}" ]; then
             # The branch's first push: everything in it is new.
             python scripts/check_listing.py "$(git hash-object -t tree /dev/null)" HEAD --many
