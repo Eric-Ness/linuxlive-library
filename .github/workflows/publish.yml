@@ -96,7 +96,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.4.1
+    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.4.2
     with:
       spec: distros/${{ matrix.slug }}/linuxlive.yaml
       name: ${{ matrix.slug }}
