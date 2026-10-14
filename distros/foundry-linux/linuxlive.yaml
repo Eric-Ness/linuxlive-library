@@ -1,0 +1,50 @@
+# Foundry Linux, made with the linuxlive.com wizard on 2026-10-14.
+# Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
+schema_version: 1
+name: "Foundry Linux"
+version: "0.1"
+base: fedora
+desktop: kde
+apps:
+  - firefox
+  - libreoffice
+  - vlc
+  - krita
+  - gimp
+  - blender
+  - vscode
+  - chromium
+branding:
+  wallpaper: assets/wallpaper.png
+  logo: assets/logo.png
+  accent_color: "#e0661f"
+# Your own additions. Scripts and repos run as root; read them before you share the distro.
+packages:
+  - git
+  - gcc
+  - make
+  - tmux
+  - htop
+  - ripgrep
+  - fd-find
+  - distrobox
+  - fastfetch
+  - jetbrains-mono-fonts-all
+files:
+  - src: files/cheatsheet.md
+    dest: "/usr/share/foundry/cheatsheet.md"
+    mode: "0644"
+  - src: files/motd
+    dest: "/etc/motd"
+    mode: "0644"
+scripts:
+  build:
+    - scripts/build.sh
+  first-boot:
+    - scripts/first-boot.sh
+  first-login:
+    - scripts/first-login.sh
+repos:
+  - url: https://github.com/tj/git-extras
+    commit: a754386dbfb85e23e766eccbb3885d635115d013
+    run: "make install PREFIX=/usr COMPL_DIR=/usr/share/bash-completion/completions"
