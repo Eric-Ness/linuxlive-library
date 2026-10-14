@@ -9,12 +9,17 @@ inside one distros/<slug>/ folder, compared with where it branched from BASE;
 with --many (a push to main) everything between BASE and HEAD counts. --slug
 checks one existing folder (a rebuild by hand); --all checks every folder (the
 monthly rebuild). Each touched folder that still exists must
-hold linuxlive.yaml, listing.yaml and its art (PNG or JPEG in assets/), at most
-10 MB in all, with a valid listing; with --pr-author, the listing's author must
-be the pull request's author.
+hold linuxlive.yaml, listing.yaml and its art (PNG or JPEG in assets/), and
+may hold scripts (text, in scripts/) and files (in files/) its spec names, at
+most 30 MB in all, with a valid listing; with --pr-author, the listing's author
+must be the pull request's author.
 
-Writes build=<JSON list> and remove=<JSON list> to $GITHUB_OUTPUT when set, and
-prints LISTING OK when everything passes.
+A distro whose spec runs code of its own (scripts or GitHub repos) is listed,
+with every script and repo, in the job summary for the reviewer.
+
+Writes build=<JSON list>, remove=<JSON list> and code=<JSON list> (the distros
+with code of their own) to $GITHUB_OUTPUT when set, and prints LISTING OK when
+everything passes.
 """
 
 from __future__ import annotations
@@ -34,7 +39,8 @@ SLUG = re.compile(r"[a-z0-9](?:[a-z0-9-]{1,38})[a-z0-9]")
 # Taken by linuxlive's own example distros and the Library's index page.
 RESERVED = {"lawn-darts-linux", "testos", "index"}
 LICENSES = {"MIT-0", "MIT", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"}
-MAX_BYTES = 10 * 1024 * 1024
+MAX_BYTES = 30 * 1024 * 1024
+MAX_SCRIPT_BYTES = 256 * 1024
 FIELDS = {"name": 60, "author": 39, "tagline": 100, "about": 600, "credits": 400, "license": 20}
 MAGIC = {".png": b"\x89PNG\r\n\x1a\n", ".jpg": b"\xff\xd8\xff", ".jpeg": b"\xff\xd8\xff"}
 
@@ -64,11 +70,16 @@ def check_folder(slug: str, pr_author: str | None) -> list[str]:
             say(f"{rel} is a symbolic link")
             continue
         total += p.stat().st_size
-        if rel in ("linuxlive.yaml", "listing.yaml"):
+        if rel in ("linuxlive.yaml", "listing.yaml") or rel.startswith("files/"):
+            continue
+        if rel.startswith("scripts/"):
+            data = p.read_bytes()
+            if b"\0" in data or len(data) > MAX_SCRIPT_BYTES:
+                say(f"{rel}: scripts must be text files of at most {MAX_SCRIPT_BYTES >> 10} KB")
             continue
         suffix = p.suffix.lower()
         if not rel.startswith("assets/") or suffix not in MAGIC:
-            say(f"{rel}: only linuxlive.yaml, listing.yaml and PNG or JPEG files in assets/ belong here")
+            say(f"{rel}: only linuxlive.yaml, listing.yaml, PNG or JPEG files in assets/, scripts in scripts/ and files in files/ belong here")
         elif not p.read_bytes().startswith(MAGIC[suffix]):
             say(f"{rel} is not really a {suffix[1:].upper()} file")
     if total > MAX_BYTES:
@@ -117,7 +128,42 @@ def check_folder(slug: str, pr_author: str | None) -> list[str]:
                 target = (folder / path).resolve()
                 if not target.is_relative_to(folder.resolve()) or not target.is_file():
                     say(f"linuxlive.yaml: branding.{key} {path!r} is not a file in this folder")
+    if isinstance(spec, dict):
+        for where, path in spec_paths(spec):
+            target = (folder / path).resolve()
+            if not target.is_relative_to(folder.resolve()) or not target.is_file():
+                say(f"linuxlive.yaml: {where} {path!r} is not a file in this folder")
     return problems
+
+
+def spec_paths(spec: dict) -> list[tuple[str, str]]:
+    """The files a spec's own additions name: files' src and every script."""
+    out = []
+    for i, entry in enumerate(spec.get("files") or []):
+        if isinstance(entry, dict) and isinstance(entry.get("src"), str):
+            out.append((f"files[{i}].src", entry["src"]))
+    scripts = spec.get("scripts") or {}
+    if isinstance(scripts, dict):
+        for kind, paths in scripts.items():
+            for i, path in enumerate(paths if isinstance(paths, list) else []):
+                if isinstance(path, str):
+                    out.append((f"scripts.{kind}[{i}]", path))
+    return out
+
+
+def own_code(slug: str) -> list[str]:
+    """What a distro runs of its own, for the reviewer: scripts and GitHub repos."""
+    try:
+        spec = yaml.safe_load((ROOT / "distros" / slug / "linuxlive.yaml").read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        return []
+    if not isinstance(spec, dict):
+        return []
+    lines = [f"script ({where.split('[')[0].split('.')[1]}): distros/{slug}/{path}" for where, path in spec_paths(spec) if where.startswith("scripts.")]
+    for repo in spec.get("repos") or []:
+        if isinstance(repo, dict):
+            lines.append(f"repo: {repo.get('url')}/tree/{repo.get('commit')} runs: {repo.get('run')}")
+    return lines
 
 
 def main() -> int:
@@ -160,9 +206,18 @@ def main() -> int:
     if problems:
         print("LISTING CHECK FAILED:\n- " + "\n- ".join(problems), file=sys.stderr)
         return 1
+    code = {slug: own_code(slug) for slug in build}
+    code = {slug: lines for slug, lines in code.items() if lines}
+    for slug, lines in code.items():
+        print(f"OWN CODE in {slug} (review every line before merging):\n- " + "\n- ".join(lines))
+    if os.environ.get("GITHUB_STEP_SUMMARY") and code:
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
+            for slug, lines in code.items():
+                out.write(f"### {slug} runs code of its own\n\nRead every script and repo before merging: they run as root in the build"
+                          " and on every computer that installs it.\n\n" + "".join(f"- {line}\n" for line in lines) + "\n")
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-            out.write(f"build={json.dumps(build)}\nremove={json.dumps(remove)}\n")
+            out.write(f"build={json.dumps(build)}\nremove={json.dumps(remove)}\ncode={json.dumps(sorted(code))}\n")
     print(f"LISTING OK (build: {', '.join(build) or 'none'}; remove: {', '.join(remove) or 'none'})")
     return 0
 

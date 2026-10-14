@@ -18,6 +18,8 @@ download, no account needed.
    distros/my-distro/
      linuxlive.yaml   your spec, unchanged
      assets/          the wallpaper and logo it names (PNG or JPEG)
+     scripts/         its own scripts, if the spec has any (text files)
+     files/           files the spec copies into the system, if any
      listing.yaml     how the Library shows it
    ```
 
@@ -37,7 +39,13 @@ download, no account needed.
    distro, as your own build did. A maintainer reviews the art and text, then
    merges.
 
-One distro per pull request; the folder may hold up to 10 MB. To update your
+A distro that runs code of its own (`scripts` or `repos` in its spec) gets a
+closer review: CI lists every script and repo in the pull request's check
+summary, and a maintainer reads each one before merging, because they run as
+root on every computer that installs it. Repos must be public and pinned to a
+commit; a pull request that moves a commit is reviewed again.
+
+One distro per pull request; the folder may hold up to 30 MB. To update your
 distro, open another pull request changing its folder; to remove it, open one
 deleting the folder, or write to abuse@linuxlive.com.
 
