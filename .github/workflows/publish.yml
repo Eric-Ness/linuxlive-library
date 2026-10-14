@@ -85,12 +85,18 @@ jobs:
       fail-fast: false
       matrix:
         slug: ${{ fromJSON(needs.listing.outputs.build) }}
-    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.2.0
+    # Fedora-based distros publish their system image to ghcr.io, which their
+    # installer and installed systems pull from.
+    permissions:
+      contents: read
+      packages: write
+    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.3.0
     with:
       spec: distros/${{ matrix.slug }}/linuxlive.yaml
       name: ${{ matrix.slug }}
       keep-iso: true
       iso-retention-days: 1
+      publish-image: true
 
   publish:
     name: publish (${{ matrix.slug }})
