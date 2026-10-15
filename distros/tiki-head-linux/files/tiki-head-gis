@@ -1,0 +1,34 @@
+#!/bin/sh
+# tiki-head-gis: what is on this Tiki Head, and a quick way to the sample map.
+#
+#   tiki-head-gis          the GIS tools and their versions, and PostGIS's state
+#   tiki-head-gis sample   open the sample world map in QGIS
+set -u
+
+if [ "${1:-}" = sample ]; then
+	project=$HOME/GIS/Projects/World.qgz
+	[ -e "$project" ] || project=/usr/share/tiki-head/data/world.qgz
+	exec qgis "$project"
+fi
+
+pkg() { dpkg-query -W -f='${Version}' "$1" 2>/dev/null || printf 'not installed'; }
+row() { printf '  %-14s %s\n' "$1" "$2"; }
+
+echo "Tiki Head Linux: the GIS bench"
+row QGIS "$(pkg qgis)"
+row GRASS "$(pkg grass)"
+row SAGA "$(pkg saga)"
+row GDAL "$(gdalinfo --version 2>/dev/null | cut -d, -f1 | sed 's/^GDAL //')"
+row PROJ "$(pkg proj-bin)"
+row PostGIS "$(pkg postgis)"
+row tippecanoe "$(tippecanoe --version 2>&1 | head -n 1 | sed 's/^tippecanoe v//')"
+row GeoPandas "$(python3 -c 'import geopandas; print(geopandas.__version__)' 2>/dev/null || printf 'not installed')"
+row JOSM "$(pkg josm)"
+echo
+if psql -qAtc 'SELECT postgis_lib_version()' >/dev/null 2>&1; then
+	echo "  PostGIS is ready: psql opens your database '$(id -un)'."
+else
+	echo "  PostGIS is set up when Tiki Head is installed to a disk (not in the live session)."
+fi
+echo "  Sample data: /usr/share/tiki-head/data (also ~/GIS/Sample data)."
+echo "  Open the sample map: tiki-head-gis sample"
