@@ -33,6 +33,7 @@ download, no account needed.
      A few sentences about it, up to 600 characters.
    credits: Where the wallpaper and logo come from, and their licences.
    license: MIT-0               # for your spec and art: MIT-0, MIT, CC0-1.0, CC-BY-4.0 or CC-BY-SA-4.0
+   website: https://example.org # optional: your distro's own site, https only
    ```
 
 3. Open a pull request. CI checks the folder and builds and boot-tests your

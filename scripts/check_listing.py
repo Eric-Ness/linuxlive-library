@@ -42,6 +42,22 @@ LICENSES = {"MIT-0", "MIT", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"}
 MAX_BYTES = 30 * 1024 * 1024
 MAX_SCRIPT_BYTES = 256 * 1024
 FIELDS = {"name": 60, "author": 39, "tagline": 100, "about": 600, "credits": 400, "license": 20}
+# Optional: the distro's own web site. https, a domain name (not an address or
+# localhost), no user@ part; the site's Worker applies the same rule.
+OPTIONAL = {"website": 200}
+WEBSITE = re.compile(r"https://(?=[^/:]*[A-Za-z])[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?::\d{1,5})?(?:/[^\s\"'<>\\]*)?")
+
+
+def website_problem(value: object) -> str | None:
+    """Why a listing's website is refused, or None."""
+    if not isinstance(value, str) or not value.strip():
+        return "website, when given, must be a web address"
+    if len(value) > OPTIONAL["website"]:
+        return f"website is {len(value)} characters, at most {OPTIONAL['website']}"
+    host = value[len("https://"):].split("/")[0].split(":")[0].lower()
+    if not WEBSITE.fullmatch(value) or host == "localhost" or host.endswith(".localhost"):
+        return "website must be an https:// address on a domain name, like https://example.org/my-distro"
+    return None
 MAGIC = {".png": b"\x89PNG\r\n\x1a\n", ".jpg": b"\xff\xd8\xff", ".jpeg": b"\xff\xd8\xff"}
 
 
@@ -97,8 +113,10 @@ def check_folder(slug: str, pr_author: str | None) -> list[str]:
         if not isinstance(listing, dict):
             say("listing.yaml must be a mapping of fields")
         else:
-            for key in sorted(set(listing) - set(FIELDS)):
+            for key in sorted(set(listing) - set(FIELDS) - set(OPTIONAL)):
                 say(f"listing.yaml: unknown field {key!r}")
+            if "website" in listing and (why := website_problem(listing["website"])):
+                say(f"listing.yaml: {why}")
             for key, limit in FIELDS.items():
                 value = listing.get(key)
                 if not isinstance(value, str) or not value.strip():
