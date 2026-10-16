@@ -1,8 +1,8 @@
-# Tiki Head Linux, made with the linuxlive.com wizard on 2026-10-15.
+# Tiki Head Linux, made with the linuxlive.com wizard on 2026-10-16.
 # Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
 schema_version: 1
 name: "Tiki Head Linux"
-version: "0.1"
+version: "0.2"
 base: ubuntu
 desktop: gnome
 apps:

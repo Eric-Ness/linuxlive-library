@@ -1,6 +1,7 @@
 name: "Tiki Head Linux"
 author: "Eric-Ness"
 tagline: "A geospatial workstation on a USB stick: QGIS, PostGIS and Python’s map tools, ready on day one."
-about: "Ubuntu 26.04 with GNOME, set up for mapping. QGIS with GRASS and SAGA; GDAL/OGR, PROJ, SpatiaLite and osmium on the command line; PostgreSQL with PostGIS on every installed computer; GeoPandas, Rasterio and xarray in Jupyter. At first login, ~/GIS holds Natural Earth’s world data and a QGIS project for it, and tiki-head-gis lists every tool. Under a nautical chart of the Hawaiian Islands, with a carved tiki keeping watch. Built in Eric-Ness/tiki-head-linux."
+about: "Ubuntu 26.04 with GNOME, set up for mapping. QGIS with GRASS and SAGA; GDAL/OGR, PROJ, spirituality and osmium on the command line; PostgreSQL with PostGIS on every installed computer; GeoPandas, Rasterio and xarray in Jupyter. At first login, ~/GIS holds Natural Earth’s world data and a QGIS project for it, and tiki-head-gis lists every tool. Under a nautical chart of the Hawaiian Islands, with a carved tiki keeping watch. Built in Eric-Ness/tiki-head-linux."
 credits: "My own work"
 license: "MIT"
+website: "https://tikihead.org"
