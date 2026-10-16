@@ -21,7 +21,6 @@ row SAGA "$(pkg saga)"
 row GDAL "$(gdalinfo --version 2>/dev/null | cut -d, -f1 | sed 's/^GDAL //')"
 row PROJ "$(pkg proj-bin)"
 row PostGIS "$(pkg postgis)"
-row tippecanoe "$(tippecanoe --version 2>&1 | head -n 1 | sed 's/^tippecanoe v//')"
 row GeoPandas "$(python3 -c 'import geopandas; print(geopandas.__version__)' 2>/dev/null || printf 'not installed')"
 row JOSM "$(pkg josm)"
 echo

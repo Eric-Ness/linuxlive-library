@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
-# The Workshop has no field for files, so these three come from here:
-# the guide, the login message and the tiki-head-gis command.
+# linuxlive.yaml has no files: entry, so these three come from here: the
+# guide, the login message and the tiki-head-gis command. Each is a copy of
+# its file in files/; change both together.
 mkdir -p /usr/share/tiki-head
 cat >/usr/share/tiki-head/README.md <<'TIKI_EOF'
 # Your GIS folder
@@ -14,13 +15,14 @@ Earth's world at 1:50 million (public domain) as one GeoPackage, and
 
 | For | Use |
 | --- | --- |
-| Making maps, editing data, analysis | **QGIS** (with GRASS and SAGA in its Processing toolbox) |
+| Making maps, editing data, analysis | **QGIS** (with GRASS in its Processing toolbox) |
+| Terrain and grid analysis | **SAGA GIS**, on its own: `saga_gui`, `saga_cmd` |
 | Converting and inspecting data | `ogrinfo`, `ogr2ogr`, `gdalinfo`, `gdal_translate`, `gdalwarp` |
 | Coordinates and projections | `cs2cs`, `projinfo` |
 | A spatial database | PostgreSQL with PostGIS: `psql` (installed systems) |
 | Small spatial databases in a file | `spatialite`, SpatiaLite GUI |
 | Python | `ipython3` or **Jupyter Notebook**, with GeoPandas, Rasterio, Shapely, PyProj, Fiona, xarray and Folium |
-| Vector tiles for web maps | `tippecanoe` |
+| Vector tiles for web maps | `ogr2ogr -f PMTiles` |
 | OpenStreetMap | **JOSM** to edit, `osmium` to slice and convert |
 | GPS tracks | `gpsbabel` |
 | Climate and ocean grids | `ncdump` and `xarray` for NetCDF |
@@ -32,7 +34,7 @@ the sample map.
 
     ogrinfo -so "Sample data/natural-earth.gpkg"
     ogr2ogr -f GeoJSON countries.geojson "Sample data/natural-earth.gpkg" admin_0_countries
-    tippecanoe -o countries.pmtiles -zg countries.geojson
+    ogr2ogr -f PMTiles countries.pmtiles countries.geojson
 
 And in Python:
 
@@ -47,8 +49,10 @@ On an installed computer, your database has your user name and PostGIS in it:
     psql -c "SELECT postgis_full_version();"
     ogr2ogr -f PostgreSQL PG:dbname=$USER "Sample data/natural-earth.gpkg" admin_0_countries
 
-In QGIS: Browser, PostgreSQL, New Connection, host `localhost`, your user name,
-no password.
+In QGIS: Browser, PostgreSQL, New Connection. Leave Host empty, so QGIS
+connects through the local socket as you; Database is your user name; no
+password. (With Host `localhost`, PostgreSQL asks for a password, and your
+database role has none.)
 TIKI_EOF
 cat >/etc/motd <<'TIKI_EOF'
 Tiki Head Linux: a geospatial workstation.
@@ -78,7 +82,6 @@ row SAGA "$(pkg saga)"
 row GDAL "$(gdalinfo --version 2>/dev/null | cut -d, -f1 | sed 's/^GDAL //')"
 row PROJ "$(pkg proj-bin)"
 row PostGIS "$(pkg postgis)"
-row tippecanoe "$(tippecanoe --version 2>&1 | head -n 1 | sed 's/^tippecanoe v//')"
 row GeoPandas "$(python3 -c 'import geopandas; print(geopandas.__version__)' 2>/dev/null || printf 'not installed')"
 row JOSM "$(pkg josm)"
 echo
@@ -161,7 +164,7 @@ dock=""
 for app in "$(pick org.qgis.qgis.desktop qgis.desktop)" "'org.mozilla.firefox.desktop'" \
 	"$(pick org.gnome.Nautilus.desktop)" "$(pick org.gnome.Ptyxis.desktop org.gnome.Terminal.desktop)" \
 	"$(pick jupyter-notebook.desktop)" "$(pick org.openstreetmap.josm.desktop josm.desktop)" \
-	"$(pick org.gnome.Maps.desktop)" "'com.visualstudio.code.desktop'" "'org.libreoffice.LibreOffice.desktop'"; do
+	"$(pick org.gnome.Maps.desktop)" "'com.visualstudio.code.desktop'"; do
 	[ -n "$app" ] && dock="${dock:+$dock, }$app"
 done
 schemas=/usr/share/glib-2.0/schemas

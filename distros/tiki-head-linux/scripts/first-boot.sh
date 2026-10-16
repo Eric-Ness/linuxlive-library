@@ -2,7 +2,9 @@
 # Once, on a computer Tiki Head was installed on, before its first login:
 # PostGIS, ready to use. Each person who can log in gets a database role and
 # a database of their own name with PostGIS in it, so `psql` and QGIS's
-# PostGIS connection (host: localhost, empty password, your user name) work.
+# PostGIS connection (Host empty, your user name, no password) work. They
+# connect through the local socket, where pg_hba.conf trusts the login
+# (peer); over TCP to localhost it asks for a password, which roles lack.
 set -eu
 systemctl enable --now postgresql.service
 tries=0
