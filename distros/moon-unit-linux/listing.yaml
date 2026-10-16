@@ -1,9 +1,6 @@
-name: Moon Unit Linux
-author: Eric-Ness
-tagline: A starry night desktop starring Moon Unit, a black-and-white cat.
-about: >-
-  Ubuntu with GNOME, Firefox, LibreOffice and VLC, under a full moon with
-  Moon Unit the tuxedo cat keeping watch. Made with the wizard on
-  linuxlive.com and built in Eric-Ness/moon-unit-linux.
-credits: Wallpaper (Moon Unit on a hill before a full moon) and logo (Moon Unit's face with a crescent moon) drawn for Moon Unit Linux, CC0.
-license: CC0-1.0
+name: "Moon Unit Linux"
+author: "Eric-Ness"
+tagline: "A starry night desktop starring Moon Unit, a black-and-white cat."
+about: "My niece has a new cat and I call it Moon Unit. It now has its own Linux distro."
+credits: "My own work"
+license: "MIT"

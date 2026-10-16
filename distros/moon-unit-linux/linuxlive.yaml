@@ -2,7 +2,7 @@
 # Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
 schema_version: 1
 name: "Moon Unit Linux"
-version: "0.2"
+version: "0.3"
 base: ubuntu
 desktop: gnome
 apps:
