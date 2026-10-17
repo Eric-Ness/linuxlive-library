@@ -1,0 +1,35 @@
+# Emails the maintainer about Library submissions through Resend: when a pull
+# request opens, and when its check (check.yml) finishes, passed or failed.
+# scripts/notify.py reads only the event and GitHub's API. Nothing from the pull
+# request is checked out or run, which is why this workflow may hold the Resend
+# key even for pull requests from forks. Secrets: RESEND_API_KEY, NOTIFY_EMAIL.
+name: notify
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    paths: ["distros/**"]
+  workflow_run:
+    workflows: [check]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  email:
+    runs-on: ubuntu-24.04
+    steps:
+      # The Library's own copy of the script, from main, never the pull request's.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: scripts/notify.py
+          sparse-checkout-cone-mode: false
+      - run: python3 scripts/notify.py
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          GITHUB_TOKEN: ${{ github.token }}
