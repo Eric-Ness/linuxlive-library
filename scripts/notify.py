@@ -19,7 +19,8 @@ import sys
 import urllib.request
 from typing import Any
 
-SENDER = "linuxlive Library <onboarding@resend.dev>"
+# notify.linuxlive.com is verified in Resend (its DNS records are in Cloudflare).
+SENDER = "linuxlive Library <library@notify.linuxlive.com>"
 UA = "linuxlive-library-notify"
 
 
