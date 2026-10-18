@@ -5,6 +5,8 @@ name: "Tiki Head Linux"
 version: "0.4"
 base: ubuntu
 desktop: gnome
+# PCs, and ARM64 for virtual machines on Apple-silicon Macs (linuxlive v0.8.0).
+arches: [amd64, arm64]
 apps:
   - vscode
   - chromium
