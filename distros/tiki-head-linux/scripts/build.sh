@@ -25,9 +25,12 @@ ogrinfo -so "$gpkg" | sed -n 's/^[0-9]*: /  layer: /p'
 # it cannot, the data is still there to open by hand. The project keeps
 # absolute paths: first-login.sh copies it to ~/GIS/Projects, away from the
 # GeoPackage, and relative ones would point at ~/GIS/Projects/natural-earth.gpkg.
+# It also keeps a default view of the whole world: written without a map
+# window, it has no saved view, and QGIS would open it at 1:1 on nothing.
 QT_QPA_PLATFORM=offscreen python3 - "$gpkg" "$data/world.qgz" <<'PY' || echo "Tiki Head: no sample QGIS project (the data is still in $gpkg)"
 import sys
-from qgis.core import Qgis, QgsApplication, QgsProject, QgsVectorLayer
+from qgis.core import (Qgis, QgsApplication, QgsProject, QgsRectangle,
+                       QgsReferencedRectangle, QgsVectorLayer)
 from qgis.PyQt.QtGui import QColor
 
 gpkg, out = sys.argv[1], sys.argv[2]
@@ -37,6 +40,7 @@ project = QgsProject.instance()
 project.setTitle("Tiki Head: the world at 1:50 million")
 project.setBackgroundColor(QColor("#cfe5ea"))
 project.setFilePathStorage(Qgis.FilePathType.Absolute)
+extent = QgsRectangle()  # null: the first layer's extent replaces it
 # Bottom to top; each one gets a chart's colours.
 for layer, title, colour in [
     ("admin_0_countries", "Countries", "#efe6cc"),
@@ -50,6 +54,12 @@ for layer, title, colour in [
         raise SystemExit(f"cannot open {layer}")
     lyr.renderer().symbol().setColor(QColor(colour))
     project.addMapLayer(lyr)
+    extent.combineExtentWith(lyr.extent())
+# All five are WGS 84, like the project. The view is what View > Zoom Full
+# shows: every layer, with a 5% margin.
+project.setCrs(lyr.crs())
+extent.scale(1.05)
+project.viewSettings().setDefaultViewExtent(QgsReferencedRectangle(extent, project.crs()))
 if not project.write(out):
     raise SystemExit("cannot write the project")
 print(f"Tiki Head: sample QGIS project {out}")
