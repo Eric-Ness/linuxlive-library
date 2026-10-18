@@ -43,7 +43,7 @@ jobs:
     strategy:
       matrix:
         slug: ${{ fromJSON(needs.listing.outputs.build) }}
-    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.8.0
+    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.8.1
     with:
       spec: distros/${{ matrix.slug }}/linuxlive.yaml
       name: ${{ matrix.slug }}
