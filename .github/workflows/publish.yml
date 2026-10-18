@@ -1,7 +1,8 @@
 # After a merge to main: builds and boot-tests every distro the push added or
 # changed (every distro, when the push changes this file, such as a move to a
 # new linuxlive release), then uploads each ISO with its SHA-256 and package list to R2 as
-# library/<slug>/<run id>/<slug>.iso (served at downloads.linuxlive.com). A
+# library/<slug>/<run id>/<slug>.iso (served at downloads.linuxlive.com), plus
+# <slug>-arm64.iso beside it when the spec's arches include arm64. A
 # distro whose folder was deleted has its ISOs deleted. Monthly (the 3rd, 05:47
 # UTC) it rebuilds every distro, so their packages never fall more than a month
 # behind. Each distro is published only if its own build passed; one that fails
@@ -96,7 +97,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.7.0
+    uses: Eric-Ness/linuxlive/.github/workflows/build.yml@v0.8.0
     with:
       spec: distros/${{ matrix.slug }}/linuxlive.yaml
       name: ${{ matrix.slug }}
@@ -118,35 +119,78 @@ jobs:
     env:
       SLUG: ${{ matrix.slug }}
     steps:
-      - name: Did this distro's own build pass?
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: distros/${{ matrix.slug }}/linuxlive.yaml
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      # Each of the spec's arches (linuxlive 0.8.0+; amd64 when it names none)
+      # is its own build job and its own ISO: <slug>.iso, and <slug>-<arch>.iso
+      # for the others (build.yml names its ARM job "build arm64").
+      - name: Which ISOs does this distro have?
+        id: arches
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, yaml
+          with open(f"distros/{os.environ['SLUG']}/linuxlive.yaml", encoding="utf-8") as f:
+              spec = yaml.safe_load(f)
+          print("arches=" + " ".join(spec.get("arches") or ["amd64"]))
+          PY
+      - name: Did this distro's own builds pass?
         env:
           GH_TOKEN: ${{ github.token }}
+          ARCHES: ${{ steps.arches.outputs.arches }}
         run: |
-          state=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100"             --jq ".jobs[] | select(.name == \"build ($SLUG) / build\") | .conclusion" | tail -n 1)
-          if [ "$state" != success ]; then
-            echo "The build of $SLUG ended ${state:-without a result}; its last published ISO stays." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
+          jobs=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" \
+            --jq '.jobs[] | "\(.name)\t\(.conclusion)"')
+          # A distro is published whole: every arch's build must have passed.
+          for arch in $ARCHES; do
+            job="build ($SLUG) / build"
+            [ "$arch" = amd64 ] || job="build ($SLUG) / build $arch"
+            state=$(printf '%s\n' "$jobs" | awk -F'\t' -v j="$job" '$1 == j { s = $2 } END { print s }')
+            if [ "$state" != success ]; then
+              echo "The $arch build of $SLUG ended ${state:-without a result}; its last published ISOs stay." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          done
+      # iso-<slug> and iso-<slug>-arm64; a longer slug that starts the same may
+      # match too, but only this distro's exact file names are used below.
       - uses: actions/download-artifact@v7
         with:
-          name: iso-${{ matrix.slug }}
+          pattern: iso-${{ matrix.slug }}*
+          merge-multiple: true
           path: iso
-      - name: Check the ISO against its SHA-256
+      - name: Check each ISO against its SHA-256
         working-directory: iso
-        run: sha256sum -c "$SLUG.iso.sha256" && test -s "$SLUG.iso.packages"
+        env:
+          ARCHES: ${{ steps.arches.outputs.arches }}
+        run: |
+          for arch in $ARCHES; do
+            f="$SLUG"; [ "$arch" = amd64 ] || f="$SLUG-$arch"
+            sha256sum -c "$f.iso.sha256" && test -s "$f.iso.packages"
+          done
       - name: Upload to R2
         working-directory: iso
+        env:
+          ARCHES: ${{ steps.arches.outputs.arches }}
         run: |
           key="library/$SLUG/$GITHUB_RUN_ID"
           # The run id makes every path new, so browsers and Cloudflare may cache it forever.
           cache="public, max-age=31536000, immutable"
-          aws s3 cp "$SLUG.iso" "s3://$BUCKET/$key/$SLUG.iso" --endpoint-url "$R2_ENDPOINT" \
-            --content-type application/x-iso9660-image --cache-control "$cache" --no-progress
-          aws s3 cp "$SLUG.iso.sha256" "s3://$BUCKET/$key/$SLUG.iso.sha256" --endpoint-url "$R2_ENDPOINT" \
-            --content-type text/plain --cache-control "$cache" --no-progress
-          aws s3 cp "$SLUG.iso.packages" "s3://$BUCKET/$key/$SLUG.iso.packages" --endpoint-url "$R2_ENDPOINT" \
-            --content-type "text/plain; charset=utf-8" --cache-control "$cache" --no-progress
-          echo "https://downloads.linuxlive.com/$key/$SLUG.iso" >> "$GITHUB_STEP_SUMMARY"
+          for arch in $ARCHES; do
+            f="$SLUG"; [ "$arch" = amd64 ] || f="$SLUG-$arch"
+            aws s3 cp "$f.iso" "s3://$BUCKET/$key/$f.iso" --endpoint-url "$R2_ENDPOINT" \
+              --content-type application/x-iso9660-image --cache-control "$cache" --no-progress
+            aws s3 cp "$f.iso.sha256" "s3://$BUCKET/$key/$f.iso.sha256" --endpoint-url "$R2_ENDPOINT" \
+              --content-type text/plain --cache-control "$cache" --no-progress
+            aws s3 cp "$f.iso.packages" "s3://$BUCKET/$key/$f.iso.packages" --endpoint-url "$R2_ENDPOINT" \
+              --content-type "text/plain; charset=utf-8" --cache-control "$cache" --no-progress
+            echo "https://downloads.linuxlive.com/$key/$f.iso ($arch)" >> "$GITHUB_STEP_SUMMARY"
+          done
 
   remove:
     name: remove (${{ matrix.slug }})
