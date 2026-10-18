@@ -2,7 +2,7 @@
 # Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
 schema_version: 1
 name: "Tiki Head Linux"
-version: "0.3"
+version: "0.4"
 base: ubuntu
 desktop: gnome
 apps:
