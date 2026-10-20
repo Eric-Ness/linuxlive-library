@@ -1,20 +1,21 @@
-# Tiki Head Linux, made with the linuxlive.com wizard on 2026-10-16.
+# Tiki Head Linux, made with the linuxlive.com wizard on 2026-10-19.
 # Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
 schema_version: 1
 name: "Tiki Head Linux"
-version: "0.4"
+version: "0.5"
 base: ubuntu
 desktop: gnome
-# PCs, and ARM64 for virtual machines on Apple-silicon Macs (linuxlive v0.8.0).
-arches: [amd64, arm64]
 apps:
   - vscode
   - chromium
   - firefox
+arches: [amd64, arm64]
 branding:
   wallpaper: assets/wallpaper.png
   logo: assets/logo.png
   accent_color: "#e0661f"
+firefox:
+  homepage: "https://tikihead.org/"
 # Your own additions. Scripts and repos run as root; read them before you share the distro.
 packages:
   - qgis
