@@ -35,6 +35,7 @@ download, no account needed.
    credits: Where the wallpaper and logo come from, and their licences.
    license: MIT-0               # for your spec and art: MIT-0, MIT, CC0-1.0, CC-BY-4.0 or CC-BY-SA-4.0
    website: https://example.org # optional: your distro's own site, https only
+   site_repo: your-github-login/my-distro-site  # optional: that site's repository (see below)
    ```
 
 3. Open a pull request. CI checks the folder and builds and boot-tests your
@@ -50,6 +51,25 @@ commit; a pull request that moves a commit is reviewed again.
 One distro per pull request; the folder may hold up to 30 MB. To update your
 distro, open another pull request changing its folder; to remove it, open one
 deleting the folder, or write to abuse@linuxlive.com.
+
+## Your distro's own web site
+
+linuxlive.com publishes each distro's current build at
+`https://linuxlive.com/library/<slug>/release.json`: the ISO's size and
+SHA-256, its download link, the boot tests and the listing. When a newer
+build replaces it, the old build stays downloadable for a week, so a site
+that checks once a day never offers a dead link. linuxlive's
+[follow-release action](https://github.com/Eric-Ness/linuxlive#follow-a-library-release)
+does the checking: run daily in your site's repository, it checks the new
+build against the download host and writes it to a file your site's build
+reads.
+
+`site_repo` names that repository. linuxlive.com then sends it a
+`library-updated` event (a `repository_dispatch` carrying the slug and run)
+as soon as it takes a new build, so the site need not wait for its daily run.
+It must be a repository of the listing's author, and it only gets the event
+if linuxlive.com's token reaches it (for now, the maintainer's own sites);
+any other site follows on its daily run.
 
 ## Rules
 

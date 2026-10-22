@@ -47,9 +47,12 @@ MAX_SCRIPT_BYTES = 256 * 1024
 MAX_SPLASH_SCRIPT_BYTES = 64 * 1024
 FIELDS = {"name": 60, "author": 39, "tagline": 100, "about": 600, "credits": 400, "license": 20}
 # Optional: the distro's own web site. https, a domain name (not an address or
-# localhost), no user@ part; the site's Worker applies the same rule.
-OPTIONAL = {"website": 200}
+# localhost), no user@ part; the site's Worker applies the same rule. And the
+# site's GitHub repository (owner/name), which linuxlive.com tells about each
+# new build; linuxlive-site's scripts/lib/distro-sites.mjs applies the same rule.
+OPTIONAL = {"website": 200, "site_repo": 140}
 WEBSITE = re.compile(r"https://(?=[^/:]*[A-Za-z])[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+(?::\d{1,5})?(?:/[^\s\"'<>\\]*)?")
+SITE_REPO = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}/(?!\.\.?$)[A-Za-z0-9._-]{1,100}")
 
 
 def website_problem(value: object) -> str | None:
@@ -61,6 +64,17 @@ def website_problem(value: object) -> str | None:
     host = value[len("https://"):].split("/")[0].split(":")[0].lower()
     if not WEBSITE.fullmatch(value) or host == "localhost" or host.endswith(".localhost"):
         return "website must be an https:// address on a domain name, like https://example.org/my-distro"
+    return None
+
+
+def site_repo_problem(value: object, author: object) -> str | None:
+    """Why a listing's site_repo is refused, or None. It must be one of the
+    author's own repositories, so linuxlive.com never sends its notices to
+    someone else's."""
+    if not isinstance(value, str) or not SITE_REPO.fullmatch(value):
+        return "site_repo must be a GitHub repository as owner/name, like your-github-login/my-distro-site"
+    if not isinstance(author, str) or value.split("/")[0].lower() != author.strip().lower():
+        return f"site_repo must be a repository of the listing's author ({author}), not of {value.split('/')[0]}"
     return None
 MAGIC = {".png": b"\x89PNG\r\n\x1a\n", ".jpg": b"\xff\xd8\xff", ".jpeg": b"\xff\xd8\xff"}
 
@@ -125,6 +139,8 @@ def check_folder(slug: str, pr_author: str | None) -> list[str]:
             for key in sorted(set(listing) - set(FIELDS) - set(OPTIONAL)):
                 say(f"listing.yaml: unknown field {key!r}")
             if "website" in listing and (why := website_problem(listing["website"])):
+                say(f"listing.yaml: {why}")
+            if "site_repo" in listing and (why := site_repo_problem(listing["site_repo"], listing.get("author"))):
                 say(f"listing.yaml: {why}")
             for key, limit in FIELDS.items():
                 value = listing.get(key)
