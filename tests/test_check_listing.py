@@ -137,6 +137,26 @@ class CheckFolderTest(unittest.TestCase):
         self.spec["settings"] = {"dock": ["firefox", "gimp"]}
         self.assertEqual(self.problems(), [])
 
+    def list_site(self, site_repo: object) -> list[str]:
+        self.write("listing.yaml", yaml.safe_dump({**LISTING, "site_repo": site_repo}))
+        return self.problems()
+
+    def test_site_repo_of_the_author_passes(self):
+        self.assertEqual(self.list_site("someone/test-distro-site"), [])
+        self.assertEqual(self.list_site("Someone/test-distro-site"), [])
+
+    def test_site_repo_of_someone_else_refused(self):
+        problems = self.list_site("another-person/test-distro-site")
+        self.assertEqual(len(problems), 1)
+        self.assertIn("site_repo must be a repository of the listing's author (someone), not of another-person", problems[0])
+
+    def test_site_repo_not_owner_slash_name_refused(self):
+        for value in ["test-distro-site", "someone/", "someone/..", "-someone/site", "someone/site/extra", 42]:
+            with self.subTest(value=value):
+                problems = self.list_site(value)
+                self.assertEqual(len(problems), 1)
+                self.assertIn("site_repo must be a GitHub repository as owner/name", problems[0])
+
 
 class LibraryFoldersTest(unittest.TestCase):
     def test_every_listed_distro_passes(self):
