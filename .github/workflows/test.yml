@@ -1,0 +1,26 @@
+# Runs the tests of the Library's own scripts (tests/) when they or the
+# workflows change. check.yml checks distros; this checks the checker.
+name: test
+
+on:
+  pull_request:
+    paths: ["scripts/**", "tests/**", ".github/workflows/**"]
+  push:
+    branches: [main]
+    paths: ["scripts/**", "tests/**", ".github/workflows/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - run: python -m unittest discover -s tests -v

@@ -10,9 +10,10 @@ with --many (a push to main) everything between BASE and HEAD counts. --slug
 checks one existing folder (a rebuild by hand); --all checks every folder (the
 monthly rebuild). Each touched folder that still exists must
 hold linuxlive.yaml, listing.yaml and its art (PNG or JPEG in assets/), and
-may hold scripts (text, in scripts/) and files (in files/) its spec names, at
-most 30 MB in all, with a valid listing; with --pr-author, the listing's author
-must be the pull request's author.
+may hold a boot splash's Plymouth script (text, a .script in assets/), scripts
+(text, in scripts/) and files (in files/) its spec names, at most 30 MB in all,
+with a valid listing; with --pr-author, the listing's author must be the pull
+request's author.
 
 A distro whose spec runs code of its own (scripts or GitHub repos) is listed,
 with every script and repo, in the job summary for the reviewer.
@@ -41,6 +42,9 @@ RESERVED = {"lawn-darts-linux", "testos", "index"}
 LICENSES = {"MIT-0", "MIT", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"}
 MAX_BYTES = 30 * 1024 * 1024
 MAX_SCRIPT_BYTES = 256 * 1024
+# A boot splash's Plymouth script (branding.splash, linuxlive v0.9.0); the
+# pipeline's own limit. Its images are PNGs in assets/ like the other art.
+MAX_SPLASH_SCRIPT_BYTES = 64 * 1024
 FIELDS = {"name": 60, "author": 39, "tagline": 100, "about": 600, "credits": 400, "license": 20}
 # Optional: the distro's own web site. https, a domain name (not an address or
 # localhost), no user@ part; the site's Worker applies the same rule.
@@ -94,8 +98,13 @@ def check_folder(slug: str, pr_author: str | None) -> list[str]:
                 say(f"{rel}: scripts must be text files of at most {MAX_SCRIPT_BYTES >> 10} KB")
             continue
         suffix = p.suffix.lower()
+        if rel.startswith("assets/") and suffix == ".script":
+            data = p.read_bytes()
+            if b"\0" in data or len(data) > MAX_SPLASH_SCRIPT_BYTES:
+                say(f"{rel}: a splash script must be a text file of at most {MAX_SPLASH_SCRIPT_BYTES >> 10} KB")
+            continue
         if not rel.startswith("assets/") or suffix not in MAGIC:
-            say(f"{rel}: only linuxlive.yaml, listing.yaml, PNG or JPEG files in assets/, scripts in scripts/ and files in files/ belong here")
+            say(f"{rel}: only linuxlive.yaml, listing.yaml, PNG or JPEG files and a splash's .script in assets/, scripts in scripts/ and files in files/ belong here")
         elif not p.read_bytes().startswith(MAGIC[suffix]):
             say(f"{rel} is not really a {suffix[1:].upper()} file")
     if total > MAX_BYTES:
@@ -146,6 +155,15 @@ def check_folder(slug: str, pr_author: str | None) -> list[str]:
                 target = (folder / path).resolve()
                 if not target.is_relative_to(folder.resolve()) or not target.is_file():
                     say(f"linuxlive.yaml: branding.{key} {path!r} is not a file in this folder")
+        splash = branding.get("splash")
+        if isinstance(splash, dict):
+            named = [("branding.splash.script", splash.get("script"))]
+            named += [(f"branding.splash.images[{i}]", path) for i, path in enumerate(splash.get("images") if isinstance(splash.get("images"), list) else [])]
+            for where, path in named:
+                if isinstance(path, str):
+                    target = (folder / path).resolve()
+                    if not target.is_relative_to(folder.resolve()) or not target.is_file():
+                        say(f"linuxlive.yaml: {where} {path!r} is not a file in this folder")
     if isinstance(spec, dict):
         for where, path in spec_paths(spec):
             target = (folder / path).resolve()

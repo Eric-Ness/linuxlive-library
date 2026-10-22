@@ -17,7 +17,8 @@ download, no account needed.
    ```text
    distros/my-distro/
      linuxlive.yaml   your spec, unchanged
-     assets/          the wallpaper and logo it names (PNG or JPEG)
+     assets/          the wallpaper and logo it names (PNG or JPEG), and a boot
+                      splash's .script and PNG images if it has one
      scripts/         its own scripts, if the spec has any (text files)
      files/           files the spec copies into the system, if any
      listing.yaml     how the Library shows it
