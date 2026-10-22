@@ -1,0 +1,96 @@
+# Number Stations, made with the linuxlive.com wizard on 2026-10-21.
+# Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
+schema_version: 1
+name: "Number Stations"
+version: "0.1"
+base: ubuntu
+desktop: gnome
+apps:
+  - firefox
+  - audacity
+flathub:
+  - dk.gqrx.gqrx
+  - io.welle.welle-gui
+  - de.haeckerfelix.Shortwave
+  - com.w1hkj.fldigi
+  - io.sourceforge.wsjt.wsjtx
+  - com.js8call.JS8Call
+  - io.github.fkinoshita.Telegraph
+  - io.github.teacond.Morse
+  - net.qsl.QSSTV
+  - com.chirpmyradio.chirp
+  - net.oz9aec.Gpredict
+  - io.github.wojciech_graj.OrbVis
+  - io.github.foldynl.QLog
+  - org.arrl.trustedqsl
+  - org.kde.kleopatra
+  - org.keepassxc.KeePassXC
+  - io.github.picocrypt_ng.Picocrypt-NG
+branding:
+  wallpaper: assets/wallpaper.png
+  logo: assets/logo.png
+  accent_color: "#3b7ea1"
+  splash:
+    script: assets/splash/splash.script
+    images:
+      - assets/splash/strip.png
+      - assets/splash/panel.png
+      - assets/splash/title.png
+      - assets/splash/sub.png
+      - assets/splash/bar.png
+      - assets/splash/bar-bg.png
+settings:
+  timezone: Etc/UTC
+  hostname: station
+  autologin: true
+  dock:
+    - firefox
+    - dk.gqrx.gqrx
+    - com.w1hkj.fldigi
+    - io.sourceforge.wsjt.wsjtx
+    - com.js8call.JS8Call
+    - net.oz9aec.Gpredict
+    - io.github.foldynl.QLog
+firefox:
+  homepage: "https://pskreporter.info/pskmap.html"
+  bookmarks:
+    - name: "PSKReporter (who hears whom)"
+      url: "https://pskreporter.info/pskmap.html"
+    - name: "WebSDR (receivers online)"
+      url: "http://websdr.org/"
+    - name: "ARRL band plan"
+      url: "https://www.arrl.org/band-plan"
+    - name: "QRZ.com (callsign lookup)"
+      url: "https://www.qrz.com/"
+    - name: "Priyom (numbers stations)"
+      url: "https://priyom.org/"
+    - name: "The Conet Project (recordings)"
+      url: "https://archive.org/details/ird059"
+    - name: "ENIGMA 2000 (newsletter)"
+      url: "https://priyom.org/enigma-2000"
+    - name: "linuxlive Library"
+      url: "https://linuxlive.com/library/"
+persistence: true
+# Your own additions. Scripts and repos run as root; read them before you share the distro.
+packages:
+  - rtl-sdr
+  - rtl-433
+  - dump1090-mutability
+  - multimon-ng
+  - direwolf
+  - ax25-tools
+  - minimodem
+  - gnuradio
+  - cw
+  - sox
+  - libhamlib-utils
+  - chrony
+  - gpsd
+  - gnupg
+  - paperkey
+  - ssss
+  - qrencode
+files:
+  - src: files/motd
+    dest: "/etc/motd"
+    mode: "0644"
