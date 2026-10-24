@@ -1,8 +1,8 @@
-# Number Stations, made with the linuxlive.com wizard on 2026-10-21.
+# Number Stations, made with the linuxlive.com wizard on 2026-10-24.
 # Build it in your own GitHub from https://github.com/Eric-Ness/linuxlive-distro (see README.md)
 schema_version: 1
 name: "Number Stations"
-version: "0.1"
+version: "0.2"
 base: ubuntu
 desktop: gnome
 apps:
@@ -52,7 +52,7 @@ settings:
     - net.oz9aec.Gpredict
     - io.github.foldynl.QLog
 firefox:
-  homepage: "https://pskreporter.info/pskmap.html"
+  homepage: "https://numberstations.com/"
   bookmarks:
     - name: "PSKReporter (who hears whom)"
       url: "https://pskreporter.info/pskmap.html"
@@ -70,6 +70,8 @@ firefox:
       url: "https://priyom.org/enigma-2000"
     - name: "linuxlive Library"
       url: "https://linuxlive.com/library/"
+    - name: "Number Stations"
+      url: "https://numberstations.com/"
 persistence: true
 # Your own additions. Scripts and repos run as root; read them before you share the distro.
 packages:
