@@ -58,11 +58,10 @@ linuxlive.com publishes each distro's current build at
 `https://linuxlive.com/library/<slug>/release.json`: the ISO's size and
 SHA-256, its download link, the boot tests and the listing. When a newer
 build replaces it, the old build stays downloadable for a week, so a site
-that checks once a day never offers a dead link. linuxlive's
-[follow-release action](https://github.com/Eric-Ness/linuxlive#follow-a-library-release)
-does the checking: run daily in your site's repository, it checks the new
-build against the download host and writes it to a file your site's build
-reads.
+that checks once a day never offers a dead link. A daily scheduled workflow
+in your site's repository can fetch `release.json`, check the ISO against the
+download host (its size, and the SHA-256 in the `.sha256` file beside it),
+and write the figures to a file your site's build reads.
 
 `site_repo` names that repository. linuxlive.com then sends it a
 `library-updated` event (a `repository_dispatch` carrying the slug and run)
