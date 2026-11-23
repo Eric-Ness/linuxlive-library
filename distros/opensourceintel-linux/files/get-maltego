@@ -1,0 +1,43 @@
+#!/bin/sh
+# Get Maltego. Maltego is free to use with a Maltego account but is not open
+# source, so it is not on this system's disc. This installs Maltego's own
+# Linux package, downloaded from maltego.com, and then starts it.
+set -u
+title="Get Maltego"
+page=https://www.maltego.com/downloads/
+
+if command -v maltego >/dev/null 2>&1; then
+	exec maltego "$@"
+fi
+
+downloads=$(xdg-user-dir DOWNLOAD 2>/dev/null || echo "$HOME/Downloads")
+deb=$(ls -t "$downloads"/[Mm]altego*.deb 2>/dev/null | head -n 1)
+if [ -z "$deb" ]; then
+	zenity --info --title="$title" --width=460 --text="Maltego isn't open source, so it isn't on this system yet. It's free to use with a Maltego account.
+
+Firefox will now open Maltego's downloads page. Download the Linux <b>.deb</b> package, then open Get Maltego again to install it." 2>/dev/null
+	exec xdg-open "$page"
+fi
+
+zenity --question --title="$title" --width=460 --ok-label=Install \
+	--text="Install Maltego from <b>$(basename "$deb")</b>?
+
+In the live session it lasts until you shut down." 2>/dev/null || exit 0
+
+# The live session's user may use sudo without a password; on an installed
+# system pkexec asks for the user's password.
+if sudo -n true 2>/dev/null; then as_root="sudo -n"; else as_root=pkexec; fi
+log=$(mktemp)
+$as_root sh -c 'apt-get update && apt-get install -y "$1"' sh "$deb" >"$log" 2>&1 &
+pid=$!
+( while kill -0 "$pid" 2>/dev/null; do echo "# Installing Maltego…"; sleep 1; done ) |
+	zenity --progress --pulsate --auto-close --no-cancel --title="$title" --width=460 2>/dev/null
+wait "$pid"
+if [ $? -ne 0 ] || ! command -v maltego >/dev/null 2>&1; then
+	zenity --error --title="$title" --width=460 --text="Maltego did not install. The last lines of the log:
+
+$(tail -n 8 "$log" | sed 's/&/\&amp;/g; s/</\&lt;/g')" 2>/dev/null
+	exit 1
+fi
+rm -f "$log"
+exec maltego "$@"

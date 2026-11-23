@@ -1,0 +1,139 @@
+# OpenSourceIntel Linux: a live USB for open-source intelligence work.
+# Every tool here reads public sources; none of them scans or probes a target.
+# Every option is explained at https://docs.linuxlive.com/spec/reference/
+schema_version: 1
+name: "OpenSourceIntel Linux"
+id: opensourceintel
+version: "0.1"
+base: ubuntu
+desktop: gnome
+apps:
+  - firefox
+  - vlc
+flathub:
+  - org.torproject.torbrowser-launcher   # Tor Browser
+  - org.keepassxc.KeePassXC              # passwords for the accounts an investigation needs
+  - net.cozic.joplin_desktop             # case notes
+  - org.zotero.Zotero                    # sources, with snapshots and citations
+  - org.gephi.Gephi                      # graphs of who links to whom
+  - fr.romainvigier.MetadataCleaner      # strip metadata before sharing a file
+  - org.onionshare.OnionShare            # share files over Tor
+branding:
+  wallpaper: assets/wallpaper.png
+  logo: assets/logo.png
+  accent_color: "#ff7043"
+  splash:   # sources connect to the logo one by one while a timeline fills
+    script: assets/splash/splash.script
+    images:
+      - assets/splash/field.png
+      - assets/splash/state-0.png
+      - assets/splash/state-1.png
+      - assets/splash/state-2.png
+      - assets/splash/state-3.png
+      - assets/splash/state-4.png
+      - assets/splash/state-5.png
+      - assets/splash/state-6.png
+      - assets/splash/state-7.png
+      - assets/splash/state-8.png
+      - assets/splash/axis.png
+      - assets/splash/bar-off.png
+      - assets/splash/bar-on.png
+settings:
+  timezone: Etc/UTC
+  hostname: osint
+  autologin: true
+  dock:
+    - firefox
+    - org.torproject.torbrowser-launcher
+    - net.cozic.joplin_desktop
+    - org.zotero.Zotero
+    - org.gephi.Gephi
+    - org.keepassxc.KeePassXC
+firefox:
+  homepage: "https://osintframework.com/"
+  bookmarks:
+    - name: "OSINT Framework"
+      url: "https://osintframework.com/"
+    - name: "Bellingcat's Online Investigation Toolkit"
+      url: "https://bellingcat.gitbook.io/toolkit"
+    - name: "Wayback Machine"
+      url: "https://web.archive.org/"
+    - name: "archive.today"
+      url: "https://archive.ph/"
+    - name: "crt.sh (certificate search)"
+      url: "https://crt.sh/"
+    - name: "OpenStreetMap"
+      url: "https://www.openstreetmap.org/"
+    - name: "Have I Been Pwned"
+      url: "https://haveibeenpwned.com/"
+    - name: "Trace Labs (OSINT for missing persons)"
+      url: "https://www.tracelabs.org/"
+    - name: "Maltego downloads"
+      url: "https://www.maltego.com/downloads/"
+    - name: "linuxlive Library"
+      url: "https://linuxlive.com/library/"
+# Your own additions. Scripts and repos run as root; read them before you share the distro.
+packages:
+  # From Ubuntu's archive
+  - recon-ng
+  - sherlock
+  - assetfinder
+  - instaloader
+  - dnstwist
+  - libimage-exiftool-perl
+  - mat2
+  - yt-dlp
+  - ffmpeg
+  - whois
+  - bind9-dnsutils
+  - jq
+  - unzip
+  - zenity
+files:
+  - src: files/osint-uv
+    dest: "/usr/libexec/opensourceintel/osint-uv"
+    mode: "0755"
+  - src: files/osint
+    dest: "/usr/local/bin/osint"
+    mode: "0755"
+  - src: files/spiderfoot
+    dest: "/usr/local/bin/spiderfoot"
+    mode: "0755"
+  - src: files/spiderfoot-cli
+    dest: "/usr/local/bin/spiderfoot-cli"
+    mode: "0755"
+  - src: files/spiderfoot-web
+    dest: "/usr/local/bin/spiderfoot-web"
+    mode: "0755"
+  - src: files/metagoofil
+    dest: "/usr/local/bin/metagoofil"
+    mode: "0755"
+  - src: files/get-maltego
+    dest: "/usr/local/bin/get-maltego"
+    mode: "0755"
+  - src: files/get-maltego.desktop
+    dest: "/usr/share/applications/get-maltego.desktop"
+  - src: files/spiderfoot.desktop
+    dest: "/usr/share/applications/spiderfoot.desktop"
+  - src: files/osint-tools.desktop
+    dest: "/usr/share/applications/osint-tools.desktop"
+repos:
+  # Python tools without an Ubuntu package, each in its own environment (files/osint-uv).
+  - url: https://github.com/laramies/theHarvester
+    commit: fd832dee7936458a4f6e2029bf37ba6797228676   # 4.11.1
+    run: /usr/libexec/opensourceintel/osint-uv tool install --python 3.14 .
+  - url: https://github.com/smicallef/spiderfoot
+    commit: 0f815a203afebf05c98b605dba5cf0475a0ee5fd   # master, after 4.0
+    run: >-
+      d=/opt/opensourceintel/spiderfoot; mkdir -p "$d"; cp -a . "$d/";
+      /usr/libexec/opensourceintel/osint-uv venv --python 3.11 "$d/.venv";
+      /usr/libexec/opensourceintel/osint-uv pip install --python "$d/.venv/bin/python" -r "$d/requirements.txt"
+  - url: https://github.com/opsdisk/metagoofil
+    commit: 88e9a3c3bc284a415e9f7eae46d8de8a91c48c4b   # v1.5.0
+    run: >-
+      d=/opt/opensourceintel/metagoofil; mkdir -p "$d"; cp -a . "$d/";
+      /usr/libexec/opensourceintel/osint-uv venv --python 3.14 "$d/.venv";
+      /usr/libexec/opensourceintel/osint-uv pip install --python "$d/.venv/bin/python" -r "$d/requirements.txt"
+scripts:
+  build:
+    - scripts/build.sh

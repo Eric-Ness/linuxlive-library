@@ -1,0 +1,7 @@
+#!/bin/sh
+# SpiderFoot (https://github.com/smicallef/spiderfoot): automated OSINT across
+# 200+ sources. Its data lives in ~/.spiderfoot.
+#   spiderfoot -l 127.0.0.1:5001     the web interface (or use spiderfoot-web)
+#   spiderfoot -s example.com -u passive
+d=/opt/opensourceintel/spiderfoot
+exec "$d/.venv/bin/python" "$d/sf.py" "$@"

@@ -1,0 +1,35 @@
+#!/bin/sh
+# Lists OpenSourceIntel Linux's command-line tools.
+b=$(printf '\033[1m'); n=$(printf '\033[0m')
+cat <<LIST
+
+  ${b}OpenSourceIntel Linux${n}: every tool here reads public sources.
+  Each one has --help (or -h). Keep notes in Joplin, sources in Zotero.
+
+  ${b}People and accounts${n}
+    sherlock USER          a username on hundreds of sites
+    maigret USER           the same, deeper, with a report (-H for HTML)
+    holehe EMAIL           which sites an email address is registered on
+    instaloader PROFILE    a public Instagram profile's posts
+
+  ${b}Domains and organisations${n}
+    theHarvester -d DOMAIN -b crtsh,duckduckgo   emails, names and hosts
+    subfinder -d DOMAIN    subdomains from public sources
+    assetfinder DOMAIN     the same, from other sources
+    findomain -t DOMAIN    the same, from certificate logs
+    amass enum -passive -d DOMAIN   subdomains, passive mode only
+    dnstwist DOMAIN        look-alike and typo domains
+    whois DOMAIN, dig DOMAIN        registration and DNS
+    uro                    clean up a list of URLs (reads stdin)
+
+  ${b}Documents, images and video${n}
+    metagoofil -d DOMAIN -t pdf,docx -o DIR -w   a domain's public documents
+    exiftool FILE          a file's metadata;  mat2 FILE  removes it
+    yt-dlp URL             save a video, with its metadata (--write-info-json)
+
+  ${b}Frameworks${n}
+    spiderfoot-web         SpiderFoot in the browser (or the SpiderFoot app)
+    recon-ng               modular recon, with a workspace per case
+    get-maltego            install Maltego (free with an account)
+
+LIST

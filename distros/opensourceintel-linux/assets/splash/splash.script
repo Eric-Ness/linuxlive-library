@@ -1,0 +1,236 @@
+# OpenSourceIntel Linux boot splash (Plymouth script theme), made with linuxlive.
+#
+# The logo sits at the hub of a star of eight public sources (dns, whois,
+# crt.sh, ...). As the computer starts, the sources connect one by one ("3 of
+# 8 sources") until all eight agree, while a year's activity timeline under
+# the name fills in orange from left to right.
+#
+# Everything is drawn for a 1920x1080 screen and scaled to the real one; the
+# screen can change size partway through the boot (when the graphics driver
+# takes over from the firmware's), so it is all laid out again when it does.
+# Functions set shared values through global. (a plain name would be local).
+# Images change at most twice a second, as time passes or the boot reports progress,
+# which keeps the splash light on slow PCs and virtual machines.
+
+Window.SetBackgroundTopColor(0.086, 0.290, 0.439);
+Window.SetBackgroundBottomColor(0.031, 0.118, 0.212);
+
+field_source = Image("field.png");
+field = Sprite();
+field.SetZ(-50);
+
+for (i = 0; i <= 8; i++) state_source[i] = Image("state-" + i + ".png");
+state = Sprite();
+state.SetZ(10);
+
+logo_source = Image("watermark.png");
+logo = Sprite();
+logo.SetZ(20);
+
+axis_source = Image("axis.png");
+axis = Sprite();
+axis.SetZ(10);
+
+bar_off_source = Image("bar-off.png");
+bar_on_source = Image("bar-on.png");
+bars = 80;
+h[0] = 35;
+h[1] = 31;
+h[2] = 22;
+h[3] = 15;
+h[4] = 8;
+h[5] = 9;
+h[6] = 10;
+h[7] = 13;
+h[8] = 11;
+h[9] = 12;
+h[10] = 10;
+h[11] = 7;
+h[12] = 13;
+h[13] = 17;
+h[14] = 26;
+h[15] = 29;
+h[16] = 36;
+h[17] = 35;
+h[18] = 35;
+h[19] = 31;
+h[20] = 30;
+h[21] = 25;
+h[22] = 19;
+h[23] = 20;
+h[24] = 20;
+h[25] = 25;
+h[26] = 30;
+h[27] = 32;
+h[28] = 39;
+h[29] = 38;
+h[30] = 40;
+h[31] = 38;
+h[32] = 39;
+h[33] = 41;
+h[34] = 43;
+h[35] = 46;
+h[36] = 45;
+h[37] = 40;
+h[38] = 35;
+h[39] = 32;
+h[40] = 30;
+h[41] = 27;
+h[42] = 30;
+h[43] = 31;
+h[44] = 34;
+h[45] = 36;
+h[46] = 35;
+h[47] = 35;
+h[48] = 32;
+h[49] = 25;
+h[50] = 21;
+h[51] = 18;
+h[52] = 13;
+h[53] = 6;
+h[54] = 9;
+h[55] = 21;
+h[56] = 35;
+h[57] = 46;
+h[58] = 50;
+h[59] = 51;
+h[60] = 49;
+h[61] = 44;
+h[62] = 38;
+h[63] = 32;
+h[64] = 24;
+h[65] = 21;
+h[66] = 16;
+h[67] = 14;
+h[68] = 8;
+h[69] = 8;
+h[70] = 7;
+h[71] = 13;
+h[72] = 17;
+h[73] = 22;
+h[74] = 31;
+h[75] = 41;
+h[76] = 51;
+h[77] = 64;
+h[78] = 46;
+h[79] = 36;
+for (i = 0; i < bars; i++) {
+    bar[i] = Sprite();
+    bar[i].SetZ(15);
+}
+
+message = Sprite();
+message.SetZ(30);
+
+sw = 0;
+sh = 0;
+s = 1;
+ox = 0;
+oy = 0;
+shown_state = -1;
+lit = 0;
+
+# Where a point of the 1920x1080 design lands on this screen.
+fun X(x) { return ox + x * s; }
+fun Y(y) { return oy + y * s; }
+
+fun show_state(n) {
+    state.SetImage(state_source[n].Scale(state_source[n].GetWidth() * s, state_source[n].GetHeight() * s));
+    global.shown_state = n;
+}
+
+fun show_bar(i, on) {
+    if (on) source = bar_on_source; else source = bar_off_source;
+    bar[i].SetImage(source.Scale(Math.Max(1, 4 * s), Math.Max(1, h[i] * s)));
+    bar[i].SetPosition(X(600 + i * 9 - 2), Y(900 - h[i]), 15);
+}
+
+fun layout() {
+    global.sw = Window.GetWidth();
+    global.sh = Window.GetHeight();
+    global.s = Math.Min(sw / 1920, sh / 1080);
+    global.ox = (sw - 1920 * s) / 2;
+    global.oy = (sh - 1080 * s) / 2;
+    # The character field covers the whole screen, whatever its shape.
+    fs = Math.Max(sw / 1920, sh / 1080);
+    field.SetImage(field_source.Scale(1920 * fs, 1080 * fs));
+    field.SetPosition((sw - 1920 * fs) / 2, (sh - 1080 * fs) / 2, -50);
+    logo.SetImage(logo_source.Scale(130 * s, 130 * s));
+    logo.SetPosition(X(960 - 65), Y(400 - 65), 20);
+    state.SetPosition(X(560), Y(170), 10);
+    if (shown_state < 0) show_state(0); else show_state(shown_state);
+    axis.SetImage(axis_source.Scale(axis_source.GetWidth() * s, axis_source.GetHeight() * s));
+    axis.SetPosition(X(600), Y(902), 10);
+    for (i = 0; i < bars; i++) show_bar(i, i < lit);
+    message.SetY(Y(990));
+}
+layout();
+
+# How far along to show, from 0 to 1. The eighth source ("8 sources agree")
+# waits for the very end, when Plymouth hands over to the desktop.
+fun advance(p) {
+    if (p > 1) p = 1;
+    n = Math.Int(p * 8);
+    if (n > 7 && p < 1) n = 7;
+    if (n > shown_state) show_state(n);
+    want = Math.Int(p * bars);
+    while (lit < want) {
+        show_bar(lit, 1);
+        global.lit = lit + 1;
+    }
+}
+
+# Plymouth's own progress is an estimate from the last boot's length. A live
+# system has no last boot, so it guesses long and only gets a third of the way
+# before the desktop takes over. So time moves the splash on too, slowing as
+# it goes (half way at 15 s, three quarters at 45 s), and whichever is further
+# along wins. Plymouth calls the refresh function about 50 times a second;
+# the splash looks at the time twice a second.
+ticks = 0;
+half = 0;
+boot_progress = 0;
+fun refresh_callback() {
+    if (Window.GetWidth() != sw || Window.GetHeight() != sh) layout();
+    global.ticks = ticks + 1;
+    global.half = half + 1;
+    if (half >= 25) {
+        global.half = 0;
+        t = ticks / 50;
+        p = Math.Max(t / (t + 15), boot_progress);
+        if (p > 0.95) p = 0.95;
+        advance(p);
+    }
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun progress_callback(duration, progress) {
+    global.boot_progress = progress;
+}
+Plymouth.SetBootProgressFunction(progress_callback);
+
+# The hand-off to the desktop: everything connected, the whole year in orange.
+# Ubuntu keeps the splash's last frame on screen while the desktop starts.
+fun quit_callback() {
+    advance(1);
+}
+Plymouth.SetQuitFunction(quit_callback);
+
+# Messages (for example a disk check) and password prompts, under the timeline.
+fun message_callback(text) {
+    image = Image.Text(text, 0.85, 0.93, 1.0);
+    message.SetImage(image);
+    message.SetX(sw / 2 - image.GetWidth() / 2);
+}
+Plymouth.SetMessageFunction(message_callback);
+
+fun display_password_callback(prompt, bullets) {
+    text = prompt + "  ";
+    for (i = 0; i < bullets; i++) text = text + "*";
+    message_callback(text);
+}
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+fun display_normal_callback() {
+    message.SetImage(Image.Text("", 0, 0, 0));
+}
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
