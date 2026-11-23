@@ -1,0 +1,26 @@
+#!/bin/sh
+# uv (https://github.com/astral-sh/uv), set up for OpenSourceIntel Linux's
+# Python tools: each tool gets its own environment under /opt/opensourceintel,
+# on the Python it needs (uv fetches Python 3.11 for SpiderFoot, whose pinned
+# libraries do not build on Ubuntu's 3.14). Used only while the image is built.
+# The first call installs uv itself, at a pinned release checked by SHA-256.
+set -eu
+UV_VERSION=0.13.9
+UV_SHA256=a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5
+uv=/opt/opensourceintel/bin/uv
+if [ ! -x "$uv" ]; then
+	mkdir -p /opt/opensourceintel/bin
+	tmp=$(mktemp -d)
+	curl -fsSL --retry 3 -o "$tmp/uv.tar.gz" \
+		"https://github.com/astral-sh/uv/releases/download/$UV_VERSION/uv-x86_64-unknown-linux-gnu.tar.gz"
+	echo "$UV_SHA256  $tmp/uv.tar.gz" | sha256sum -c -
+	tar -xzf "$tmp/uv.tar.gz" -C "$tmp" --strip-components=1
+	install -m 0755 "$tmp/uv" "$uv"
+	rm -rf "$tmp"
+fi
+export UV_PYTHON_INSTALL_DIR=/opt/opensourceintel/python
+export UV_TOOL_DIR=/opt/opensourceintel/tools
+export UV_TOOL_BIN_DIR=/usr/local/bin
+export UV_CACHE_DIR=/var/cache/opensourceintel-uv
+export UV_PYTHON_PREFERENCE=system
+exec "$uv" "$@"

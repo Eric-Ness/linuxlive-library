@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=OSINT Tools
+Comment=A terminal with the list of command-line OSINT tools
+Exec=sh -c "osint; exec bash"
+Icon=utilities-terminal
+Terminal=true
+Categories=Network;Security;

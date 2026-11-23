@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Get Maltego
+Comment=Install Maltego from its maker's own download (free with a Maltego account)
+Exec=/usr/local/bin/get-maltego
+Icon=network-workgroup
+Terminal=false
+Categories=Network;Security;

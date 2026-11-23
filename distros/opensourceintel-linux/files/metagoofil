@@ -1,0 +1,6 @@
+#!/bin/sh
+# Metagoofil (https://github.com/opsdisk/metagoofil): finds a domain's public
+# documents through search engines and downloads them, for their metadata.
+#   metagoofil -d example.com -t pdf,docx -o ./docs -w   then: exiftool ./docs
+d=/opt/opensourceintel/metagoofil
+exec "$d/.venv/bin/python" "$d/metagoofil.py" "$@"

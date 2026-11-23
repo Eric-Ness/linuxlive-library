@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SpiderFoot
+Comment=Automated OSINT across 200+ public sources, in your browser
+Exec=/usr/local/bin/spiderfoot-web
+Icon=edit-find
+Terminal=false
+Categories=Network;Security;

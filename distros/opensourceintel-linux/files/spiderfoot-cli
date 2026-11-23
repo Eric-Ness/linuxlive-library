@@ -1,0 +1,4 @@
+#!/bin/sh
+# SpiderFoot's command line, for a SpiderFoot server already running.
+d=/opt/opensourceintel/spiderfoot
+exec "$d/.venv/bin/python" "$d/sfcli.py" "$@"

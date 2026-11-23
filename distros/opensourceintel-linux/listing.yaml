@@ -1,0 +1,7 @@
+name: "OpenSourceIntel Linux"
+author: "Eric-Ness"
+tagline: "A live USB for open-source intelligence: passive OSINT tools that boot anywhere and leave no trace."
+about: "Ubuntu 26.04 with GNOME, set up for investigating public sources. sherlock, maigret and holehe for accounts; theHarvester, subfinder, amass and dnstwist for domains; metagoofil, exiftool and yt-dlp for documents and media; SpiderFoot and recon-ng as frameworks, and a Get Maltego launcher. Tor Browser, Joplin, Zotero and Gephi keep the case. Every tool only reads public sources: nothing scans a target. Type osint for the list. Built in Eric-Ness/opensourceintel-linux."
+credits: "My own work"
+license: "MIT-0"
+website: "https://opensourceintel.net/"
