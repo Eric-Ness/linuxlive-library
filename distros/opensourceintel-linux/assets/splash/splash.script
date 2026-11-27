@@ -182,10 +182,13 @@ fun advance(p) {
 
 # Plymouth's own progress is an estimate from the last boot's length. A live
 # system has no last boot, so it guesses long and only gets a third of the way
-# before the desktop takes over. So time moves the splash on too, slowing as
-# it goes (half way at 8 s, three quarters at 24 s), and whichever is further
-# along wins. Plymouth calls the refresh function about 50 times a second;
-# the splash looks at the time twice a second.
+# before the desktop takes over. So time moves the splash on too, steadily,
+# and whichever is further along wins: 7 of 8 sources and nearly the whole
+# year by 15 s. It has to be quick, because the splash stops drawing when the
+# login screen starts (GDM deactivates Plymouth and keeps its last frame until
+# the desktop is up, which takes half a minute in a slow virtual machine). A
+# longer boot rests on 7 of 8. Plymouth calls the refresh function about 50
+# times a second; the splash looks at the time twice a second.
 ticks = 0;
 half = 0;
 boot_progress = 0;
@@ -196,7 +199,7 @@ fun refresh_callback() {
     if (half >= 25) {
         global.half = 0;
         t = ticks / 50;
-        p = Math.Max(t / (t + 8), boot_progress);
+        p = Math.Max(t / 16, boot_progress);
         if (p > 0.95) p = 0.95;
         advance(p);
     }
@@ -208,8 +211,8 @@ fun progress_callback(duration, progress) {
 }
 Plymouth.SetBootProgressFunction(progress_callback);
 
-# The hand-off to the desktop: everything connected, the whole year in orange.
-# Ubuntu keeps the splash's last frame on screen while the desktop starts.
+# At quit: everything connected, the whole year in orange. Shown when Plymouth
+# still draws at quit (no login screen took the display first).
 fun quit_callback() {
     advance(1);
 }
