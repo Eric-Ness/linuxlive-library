@@ -74,4 +74,23 @@ for check in \
 	fi
 	echo "ok: $check"
 done
+
+# 4. SpiderFoot's web interface serves its pages when started from somewhere
+# else, as spiderfoot-web starts it from home (0.1 served a 500 on every page).
+(cd / && HOME=/tmp/osint-check exec spiderfoot -l 127.0.0.1:5099 </dev/null >/tmp/osint-check/sf.log 2>&1) &
+sf=$!
+code=000
+for _ in $(seq 1 60); do
+	code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5099/ || true)
+	[ "$code" = 200 ] && break
+	sleep 1
+done
+kill "$sf" 2>/dev/null || true
+wait "$sf" 2>/dev/null || true
+if [ "$code" != 200 ]; then
+	tail -n 20 /tmp/osint-check/sf.log
+	echo "build.sh: SpiderFoot's web interface answered $code, not 200" >&2
+	exit 1
+fi
+echo "ok: SpiderFoot's web interface (200 from /)"
 rm -rf /tmp/osint-check

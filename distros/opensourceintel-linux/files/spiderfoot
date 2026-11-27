@@ -4,4 +4,9 @@
 #   spiderfoot -l 127.0.0.1:5001     the web interface (or use spiderfoot-web)
 #   spiderfoot -s example.com -u passive
 d=/opt/opensourceintel/spiderfoot
+# Its web interface finds its templates relative to the working directory
+# (TemplateLookup(directories=[""]) in sfwebui.py), so it runs from its own
+# folder; from anywhere else every page is a 500. Its data stays in
+# ~/.spiderfoot, and the shell has already opened any > redirect.
+cd "$d" || exit 1
 exec "$d/.venv/bin/python" "$d/sf.py" "$@"

@@ -183,7 +183,7 @@ fun advance(p) {
 # Plymouth's own progress is an estimate from the last boot's length. A live
 # system has no last boot, so it guesses long and only gets a third of the way
 # before the desktop takes over. So time moves the splash on too, slowing as
-# it goes (half way at 15 s, three quarters at 45 s), and whichever is further
+# it goes (half way at 8 s, three quarters at 24 s), and whichever is further
 # along wins. Plymouth calls the refresh function about 50 times a second;
 # the splash looks at the time twice a second.
 ticks = 0;
@@ -196,7 +196,7 @@ fun refresh_callback() {
     if (half >= 25) {
         global.half = 0;
         t = ticks / 50;
-        p = Math.Max(t / (t + 15), boot_progress);
+        p = Math.Max(t / (t + 8), boot_progress);
         if (p > 0.95) p = 0.95;
         advance(p);
     }
