@@ -9,8 +9,8 @@
 # screen can change size partway through the boot (when the graphics driver
 # takes over from the firmware's), so it is all laid out again when it does.
 # Functions set shared values through global. (a plain name would be local).
-# Images change at most twice a second, as time passes or the boot reports progress,
-# which keeps the splash light on slow PCs and virtual machines.
+# Images change at most five times a second, as time passes or the boot reports
+# progress, which keeps the splash light on slow PCs and virtual machines.
 
 Window.SetBackgroundTopColor(0.086, 0.290, 0.439);
 Window.SetBackgroundBottomColor(0.031, 0.118, 0.212);
@@ -166,12 +166,10 @@ fun layout() {
 }
 layout();
 
-# How far along to show, from 0 to 1. The eighth source ("8 sources agree")
-# waits for the very end, when Plymouth hands over to the desktop.
+# How far along to show, from 0 to 1.
 fun advance(p) {
     if (p > 1) p = 1;
     n = Math.Int(p * 8);
-    if (n > 7 && p < 1) n = 7;
     if (n > shown_state) show_state(n);
     want = Math.Int(p * bars);
     while (lit < want) {
@@ -182,26 +180,25 @@ fun advance(p) {
 
 # Plymouth's own progress is an estimate from the last boot's length. A live
 # system has no last boot, so it guesses long and only gets a third of the way
-# before the desktop takes over. So time moves the splash on too, steadily,
-# and whichever is further along wins: 7 of 8 sources and nearly the whole
-# year by 15 s. It has to be quick, because the splash stops drawing when the
-# login screen starts (GDM deactivates Plymouth and keeps its last frame until
-# the desktop is up, which takes half a minute in a slow virtual machine). A
-# longer boot rests on 7 of 8. Plymouth calls the refresh function about 50
-# times a second; the splash looks at the time twice a second.
+# before the desktop takes over. So time moves the splash on too, and
+# whichever is further along wins: all eight sources and the whole year by
+# 5 s. It has to be quick, because the splash stops drawing when the login
+# screen starts (GDM deactivates Plymouth and keeps its last frame on screen
+# until the desktop is up), and that comes about 10 s after the splash appears
+# in a slow virtual machine, sooner on a real PC. Whatever frame is up then
+# should look finished. Plymouth calls the refresh function about 50 times a
+# second; the splash looks at the time five times a second.
 ticks = 0;
-half = 0;
+step = 0;
 boot_progress = 0;
 fun refresh_callback() {
     if (Window.GetWidth() != sw || Window.GetHeight() != sh) layout();
     global.ticks = ticks + 1;
-    global.half = half + 1;
-    if (half >= 25) {
-        global.half = 0;
+    global.step = step + 1;
+    if (step >= 10) {
+        global.step = 0;
         t = ticks / 50;
-        p = Math.Max(t / 16, boot_progress);
-        if (p > 0.95) p = 0.95;
-        advance(p);
+        advance(Math.Max(t / 5, boot_progress));
     }
 }
 Plymouth.SetRefreshFunction(refresh_callback);
@@ -211,8 +208,8 @@ fun progress_callback(duration, progress) {
 }
 Plymouth.SetBootProgressFunction(progress_callback);
 
-# At quit: everything connected, the whole year in orange. Shown when Plymouth
-# still draws at quit (no login screen took the display first).
+# At quit: everything connected, the whole year in orange, in case the boot
+# was quicker than the splash.
 fun quit_callback() {
     advance(1);
 }
