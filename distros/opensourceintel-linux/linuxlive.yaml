@@ -4,7 +4,7 @@
 schema_version: 1
 name: "OpenSourceIntel Linux"
 id: opensourceintel
-version: "0.3"
+version: "0.4"
 base: ubuntu
 desktop: gnome
 apps:
